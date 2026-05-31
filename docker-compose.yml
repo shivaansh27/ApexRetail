@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: store_intelligence_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/workspace
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: always
+
+  replay:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: store_intelligence_replay
+    command: python pipeline/event_replay.py
+    environment:
+      - API_URL=http://api:8000
+      - EVENTS_PATH=/workspace/events.jsonl
+      - REPLAY_DELAY=0.2
+      - LOOP_INFINITELY=true
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/workspace
+    depends_on:
+      - api
+    restart: always
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: store_intelligence_dashboard
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: always

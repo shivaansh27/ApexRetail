@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Retail - Store Intelligence Hub</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        purplle: {
+                            50: '#f5f0ff',
+                            100: '#eddfff',
+                            200: '#dec4ff',
+                            300: '#c59aff',
+                            400: '#aa65ff',
+                            500: '#8e34ff',
+                            600: '#7c16ff',
+                            700: '#6906eb',
+                            800: '#5804c7',
+                            900: '#4a05a3',
+                            950: '#2d0070',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Glassmorphism Styles */
+        .glass {
+            background: rgba(15, 12, 30, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .glass-highlight {
+            border: 1px solid rgba(142, 52, 255, 0.25);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 12, 30, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(142, 52, 255, 0.4);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(142, 52, 255, 0.7);
+        }
+        /* Breathing animation for active indicator */
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 16px rgba(34, 197, 94, 0.8);
+                transform: scale(1.05);
+            }
+        }
+        .pulse-active {
+            animation: pulse-glow 2s infinite;
+        }
+        /* Warning pulse */
+        @keyframes pulse-warn {
+            0%, 100% {
+                box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+                border-color: rgba(239, 68, 68, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 16px rgba(239, 68, 68, 0.8);
+                border-color: rgba(239, 68, 68, 0.8);
+            }
+        }
+        .pulse-critical {
+            animation: pulse-warn 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-[#0b0816] text-[#e2e1e6] font-sans min-h-screen selection:bg-purplle-500 selection:text-white overflow-x-hidden">
+
+    <!-- Glowing Background Orbs -->
+    <div class="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-purplle-950/20 blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-950/20 blur-[120px] pointer-events-none z-0"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 py-6 flex flex-col gap-6">
+
+        <!-- HEADER SECTION -->
+        <header class="glass rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-purplle-600/20 border border-purplle-500/30 rounded-xl text-purplle-400">
+                    <i data-lucide="sparkles" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-outfit font-extrabold tracking-tight bg-gradient-to-r from-white via-purplle-100 to-purplle-400 bg-clip-text text-transparent">
+                        APEX RETAIL
+                    </h1>
+                    <p class="text-xs md:text-sm text-purplle-300 font-medium">Real-Time Store Intelligence Hub</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Store Dropdown -->
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-semibold text-purplle-300 uppercase tracking-wider">Store ID:</label>
+                    <select id="storeSelect" class="bg-[#141026] border border-purplle-500/20 text-white rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:border-purplle-500 cursor-pointer">
+                        <option value="ST1008">ST1008 - Brigade Road, BLR</option>
+                        <option value="STORE_BLR_002">STORE_BLR_002 - Indiranagar, BLR</option>
+                    </select>
+                </div>
+
+                <!-- Feed Status Badge -->
+                <div class="flex items-center gap-2 bg-[#120d24] border border-purplle-500/10 rounded-xl px-4 py-2 text-sm font-semibold">
+                    <div id="healthIndicator" class="w-2.5 h-2.5 rounded-full bg-green-500 pulse-active"></div>
+                    <span id="healthLabel" class="text-green-400 uppercase tracking-wide">Live Feed Active</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- OPERATIONAL KEY METRICS CARDS -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Metric 1: Unique Visitors -->
+            <div class="glass rounded-2xl p-6 flex items-center justify-between relative overflow-hidden transition-all hover:-translate-y-1 hover:border-purplle-500/30">
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs font-bold text-purplle-300 uppercase tracking-wider">Unique Visitors</span>
+                    <span id="metricVisitors" class="text-3xl font-outfit font-extrabold text-white">0</span>
+                    <span class="text-xs text-green-400 flex items-center gap-1 font-semibold">
+                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i> +12.4% vs baseline
+                    </span>
+                </div>
+                <div class="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Metric 2: Conversion Rate -->
+            <div class="glass rounded-2xl p-6 flex items-center justify-between relative overflow-hidden transition-all hover:-translate-y-1 hover:border-purplle-500/30">
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs font-bold text-purplle-300 uppercase tracking-wider">Conversion Rate</span>
+                    <span id="metricConversion" class="text-3xl font-outfit font-extrabold text-white">0.0%</span>
+                    <span class="text-xs text-green-400 flex items-center gap-1 font-semibold">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Active Conversion
+                    </span>
+                </div>
+                <div class="p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded-xl">
+                    <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Metric 3: Queue Depth -->
+            <div id="queueCard" class="glass rounded-2xl p-6 flex items-center justify-between relative overflow-hidden transition-all hover:-translate-y-1">
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs font-bold text-purplle-300 uppercase tracking-wider">Queue Depth</span>
+                    <span id="metricQueue" class="text-3xl font-outfit font-extrabold text-white">0</span>
+                    <span id="queueSub" class="text-xs text-purplle-400 font-semibold">Normal billing traffic</span>
+                </div>
+                <div id="queueIconContainer" class="p-3 bg-purplle-500/10 border border-purplle-500/20 text-purplle-400 rounded-xl">
+                    <i data-lucide="user-check" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Metric 4: Abandonment Rate -->
+            <div class="glass rounded-2xl p-6 flex items-center justify-between relative overflow-hidden transition-all hover:-translate-y-1 hover:border-purplle-500/30">
+                <div class="flex flex-col gap-2">
+                    <span class="text-xs font-bold text-purplle-300 uppercase tracking-wider">Abandonment Rate</span>
+                    <span id="metricAbandon" class="text-3xl font-outfit font-extrabold text-white">0.0%</span>
+                    <span class="text-xs text-red-400 flex items-center gap-1 font-semibold">
+                        <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> Queue drop-offs
+                    </span>
+                </div>
+                <div class="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+                    <i data-lucide="log-out" class="w-6 h-6"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- DYNAMIC SPATIAL HEATMAP & STORE FLOOR PLAN -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Heatmap Visualization Column (Width: 2/3) -->
+            <div class="glass rounded-2xl p-6 lg:col-span-2 flex flex-col gap-4 relative overflow-hidden">
+                <div>
+                    <h2 class="text-lg font-outfit font-bold tracking-wide text-white flex items-center gap-2">
+                        <i data-lucide="map" class="text-purplle-400 w-5 h-5"></i>
+                        Store Floor Plan - Live Heat Intensity
+                    </h2>
+                    <p class="text-xs text-purplle-300">Footfall volume mapping overlaying the physical brand layout coordinates.</p>
+                </div>
+
+                <!-- Interactive SVG Map Container -->
+                <div class="w-full aspect-[940/451] bg-[#100c22] border border-purplle-500/10 rounded-xl p-2 relative flex items-center justify-center select-none overflow-hidden">
+                    <svg viewBox="0 0 940 451" class="w-full h-full text-xs font-semibold">
+                        <!-- Red perimeter boundary walls -->
+                        <rect x="10" y="10" width="920" height="431" fill="none" stroke="rgba(239, 68, 68, 0.4)" stroke-width="2" stroke-dasharray="4 4" />
+                        
+                        <!-- Left Door Entry Indicator -->
+                        <path d="M 10 300 A 100 100 0 0 1 10 150" fill="none" stroke="#aa65ff" stroke-width="3" stroke-dasharray="5 3"/>
+                        <text x="25" y="240" fill="#aa65ff" font-size="10" font-weight="bold">ENTRY / EXIT</text>
+
+                        <!-- TOP WALL BRAND COUNTERS -->
+                        <g id="zone_EB_KOREAN" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="50" y="30" width="100" height="70" rx="4" />
+                            <text x="100" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">EB KOREAN</text>
+                            <text class="count" x="100" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_THE_FACE_SHOP" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="160" y="30" width="110" height="70" rx="4" />
+                            <text x="215" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">THE FACE SHOP</text>
+                            <text class="count" x="215" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_GOOD_VIBES" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="280" y="30" width="110" height="70" rx="4" />
+                            <text x="335" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">GOOD VIBES</text>
+                            <text class="count" x="335" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_DERMDOC" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="400" y="30" width="100" height="70" rx="4" />
+                            <text x="450" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">DERMDOC</text>
+                            <text class="count" x="450" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_MINIMALIST" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="510" y="30" width="100" height="70" rx="4" />
+                            <text x="560" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">MINIMALIST</text>
+                            <text class="count" x="560" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_AQUALOGICA" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="620" y="30" width="100" height="70" rx="4" />
+                            <text x="670" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">AQUALOGICA</text>
+                            <text class="count" x="670" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_LAKME_SKIN" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="730" y="30" width="100" height="70" rx="4" />
+                            <text x="780" y="70" text-anchor="middle" fill="#e2e1e6" font-size="10">LAKME SKIN</text>
+                            <text class="count" x="780" y="85" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <!-- CENTER FLOORS MAKEUP UNITS -->
+                        <g id="zone_MAKEUP_UNIT" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="350" y="160" width="150" height="90" rx="4" />
+                            <text x="425" y="200" text-anchor="middle" fill="#e2e1e6" font-size="11" font-weight="bold">MAKEUP UNIT (F.O.H)</text>
+                            <text class="count" x="425" y="220" text-anchor="middle" fill="#aa65ff" font-size="10">0 visits</text>
+                        </g>
+
+                        <!-- BOTTOM WALL BRAND COUNTERS -->
+                        <g id="zone_MAYBELLINE" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="50" y="350" width="100" height="70" rx="4" />
+                            <text x="100" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">MAYBELLINE</text>
+                            <text class="count" x="100" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_FACES_CANADA" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="160" y="350" width="110" height="70" rx="4" />
+                            <text x="215" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">FACES CANADA</text>
+                            <text class="count" x="215" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_LAKME" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="280" y="350" width="110" height="70" rx="4" />
+                            <text x="335" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">LAKME</text>
+                            <text class="count" x="335" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_COLORBAR_SUGAR" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="400" y="350" width="100" height="70" rx="4" />
+                            <text x="450" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">COLORBAR/SUGAR</text>
+                            <text class="count" x="450" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_SWISS_BEAUTY" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="510" y="350" width="100" height="70" rx="4" />
+                            <text x="560" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">SWISS BEAUTY</text>
+                            <text class="count" x="560" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_RENEE_NYBAE" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="620" y="350" width="100" height="70" rx="4" />
+                            <text x="670" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">RENEE/NYBAE</text>
+                            <text class="count" x="670" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_ALPS_GOODNESS" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="730" y="350" width="100" height="70" rx="4" />
+                            <text x="780" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">ALPS GOODNESS</text>
+                            <text class="count" x="780" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <g id="zone_STREAX" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="840" y="350" width="80" height="70" rx="4" />
+                            <text x="880" y="390" text-anchor="middle" fill="#e2e1e6" font-size="10">STREAX</text>
+                            <text class="count" x="880" y="405" text-anchor="middle" fill="#aa65ff" font-size="9">0 visits</text>
+                        </g>
+
+                        <!-- RIGHT WALL BILLING COUNTER -->
+                        <g id="zone_CASH_COUNTER" class="transition-all duration-500 cursor-help" fill="rgba(142, 52, 255, 0.05)" stroke="rgba(255,255,255,0.1)">
+                            <rect x="820" y="140" width="100" height="130" rx="4" />
+                            <text x="870" y="200" text-anchor="middle" fill="#e2e1e6" font-size="11" font-weight="bold">BILLING</text>
+                            <text x="870" y="215" text-anchor="middle" fill="#e2e1e6" font-size="10">COUNTER</text>
+                            <text class="count" x="870" y="235" text-anchor="middle" fill="#aa65ff" font-size="10">0 visits</text>
+                        </g>
+                    </svg>
+
+                    <!-- Dynamic Low Data Confidence Warning Cover -->
+                    <div id="confidenceOverlay" class="absolute inset-0 bg-[#0f0c1ecc]/90 flex flex-col items-center justify-center gap-3 p-4 text-center hidden">
+                        <div class="p-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 rounded-xl">
+                            <i data-lucide="alert-circle" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="font-outfit font-bold text-white text-lg">Incomplete Footfall Confidence</h3>
+                        <p class="text-xs text-purplle-300 max-w-sm">Fewer than 20 dynamic sessions have been ingested for the current window. Analytics accuracy is degraded.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTIVE OPERATIONAL ANOMALIES TICKER -->
+            <div class="glass rounded-2xl p-6 flex flex-col gap-4">
+                <div>
+                    <h2 class="text-lg font-outfit font-bold tracking-wide text-white flex items-center gap-2">
+                        <i data-lucide="shield-alert" class="text-red-400 w-5 h-5"></i>
+                        Active Anomalies
+                    </h2>
+                    <p class="text-xs text-purplle-300">Live operational alerts generated by current checkout wait times and brand engagement levels.</p>
+                </div>
+
+                <!-- Ticker list -->
+                <div id="anomaliesContainer" class="flex flex-col gap-3 overflow-y-auto max-h-[360px] pr-1">
+                    <!-- Placeholder when empty -->
+                    <div id="noAnomaliesPlaceholder" class="flex flex-col items-center justify-center p-8 text-center border border-dashed border-purplle-500/10 rounded-xl gap-2 text-purplle-400">
+                        <i data-lucide="check-circle" class="w-8 h-8 text-green-400"></i>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-green-400">Zero active alarms</span>
+                        <p class="text-[11px] text-purplle-300">All systems functioning at nominal levels.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ANALYTICS GRAPHS: CONVERSION FUNNEL & ZONE DWELLS -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Funnel Stage Chart -->
+            <div class="bg-[#110d24] border border-purplle-500/10 rounded-2xl p-6 flex flex-col gap-4">
+                <h2 class="text-lg font-outfit font-bold tracking-wide text-white flex items-center gap-2">
+                    <i data-lucide="filter" class="text-purplle-400 w-5 h-5"></i>
+                    Session Conversion Funnel
+                </h2>
+                <div class="w-full h-[260px] relative">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Dwell Time Chart -->
+            <div class="bg-[#110d24] border border-purplle-500/10 rounded-2xl p-6 flex flex-col gap-4">
+                <h2 class="text-lg font-outfit font-bold tracking-wide text-white flex items-center gap-2">
+                    <i data-lucide="clock" class="text-purplle-400 w-5 h-5"></i>
+                    Average Brand Dwell (Seconds)
+                </h2>
+                <div class="w-full h-[260px] relative">
+                    <canvas id="dwellChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- INCOMING REAL-TIME EVENTS LOG TICKER -->
+        <footer class="glass rounded-2xl p-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b border-purplle-500/10 pb-2">
+                <h2 class="text-sm font-outfit font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="terminal" class="text-purplle-400 w-4 h-4"></i>
+                    Live Ingestion Stream (Feed Logger)
+                </h2>
+                <span class="text-[10px] text-purplle-400 font-bold uppercase tracking-wider">Updates every 2 seconds</span>
+            </div>
+            
+            <div id="eventsLog" class="h-24 bg-[#07050f] border border-purplle-500/10 rounded-xl p-3 font-mono text-[10px] text-green-400 flex flex-col gap-1 overflow-y-auto select-text scrollbar-thin">
+                <div class="text-purplle-400">[SYSTEM]: Waiting for API ingestion events to begin...</div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- MAIN DASHBOARD CONTROLLER SCRIPT -->
+    <script>
+        const API_URL = "http://localhost:8000";
+        let funnelChart = null;
+        let dwellChart = null;
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // 1. Fetch Health Status
+        async function fetchHealth() {
+            try {
+                const res = await fetch(`${API_URL}/health`);
+                const data = await res.json();
+                
+                const indicator = document.getElementById("healthIndicator");
+                const label = document.getElementById("healthLabel");
+                
+                if (data.status === "OK") {
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-green-500 pulse-active";
+                    label.className = "text-green-400 uppercase tracking-wide";
+                    label.innerText = "Live Feed Active";
+                } else if (data.status === "WARN") {
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-yellow-500 pulse-active";
+                    label.className = "text-yellow-400 uppercase tracking-wide";
+                    label.innerText = "Stale feed (Lag > 10m)";
+                } else {
+                    indicator.className = "w-2.5 h-2.5 rounded-full bg-red-500 pulse-critical";
+                    label.className = "text-red-400 uppercase tracking-wide";
+                    label.innerText = "API Feed Offline";
+                }
+            } catch (err) {
+                const indicator = document.getElementById("healthIndicator");
+                const label = document.getElementById("healthLabel");
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-red-500 pulse-critical";
+                label.className = "text-red-400 uppercase tracking-wide";
+                label.innerText = "API Connection Lost";
+            }
+        }
+
+        // 2. Fetch Store Metrics
+        async function fetchMetrics(storeId) {
+            try {
+                const res = await fetch(`${API_URL}/stores/${storeId}/metrics`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Bind Metric Cards
+                document.getElementById("metricVisitors").innerText = data.unique_visitors;
+                document.getElementById("metricConversion").innerText = `${(data.conversion_rate * 100).toFixed(1)}%`;
+                
+                const qDepth = data.current_queue_depth;
+                document.getElementById("metricQueue").innerText = qDepth;
+                document.getElementById("metricAbandon").innerText = `${(data.abandonment_rate * 100).toFixed(1)}%`;
+
+                // Handle Queue depth warning visual state
+                const queueCard = document.getElementById("queueCard");
+                const queueSub = document.getElementById("queueSub");
+                const queueIconContainer = document.getElementById("queueIconContainer");
+                
+                if (qDepth >= 8) {
+                    queueCard.className = "glass rounded-2xl p-6 flex items-center justify-between relative overflow-hidden transition-all hover:-translate-y-1 pulse-critical bg-red-950/20";
+                    queueSub.className = "text-xs text-red-400 font-bold uppercase tracking-wide";
+                    queueSub.innerText = "CRITICAL QUEUE SPIKE";
+                    queueIconContainer.className = "p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl";
+                } else {
+                    queueCard.className = "glass rounded-2xl p-6 flex items-center justify-between relative overflow-hidden transition-all hover:-translate-y-1 hover:border-purplle-500/30";
+                    queueSub.className = "text-xs text-purplle-400 font-semibold";
+                    queueSub.innerText = "Normal billing traffic";
+                    queueIconContainer.className = "p-3 bg-purplle-500/10 border border-purplle-500/20 text-purplle-400 rounded-xl";
+                }
+
+                // Append a mock feed line representing visual activity
+                logEvent(`Successfully requested metrics calculation. Non-staff Visitors: ${data.unique_visitors}, Queue: ${qDepth}`);
+            } catch (err) {
+                console.error("Error fetching metrics:", err);
+            }
+        }
+
+        // 3. Fetch Store Heatmap
+        async function fetchHeatmap(storeId) {
+            try {
+                const res = await fetch(`${API_URL}/stores/${storeId}/heatmap`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Set dynamic low confidence overlay cover
+                const overlay = document.getElementById("confidenceOverlay");
+                if (data.data_confidence === false) {
+                    overlay.classList.remove("hidden");
+                } else {
+                    overlay.classList.add("hidden");
+                }
+
+                // Render Heat intensity color shifts on SVG elements
+                const zones = data.zones;
+                const svgZones = document.querySelectorAll("g[id^='zone_']");
+                
+                const chartLabels = [];
+                const chartDwells = [];
+
+                svgZones.forEach(g => {
+                    const zoneKey = g.id.replace("zone_", "");
+                    const info = zones[zoneKey];
+
+                    if (info) {
+                        const texts = g.getElementsByTagName("text");
+                        if (texts.length > 0) {
+                            const countText = texts[texts.length - 1];
+                            countText.textContent = `${info.raw_frequency} visits`;
+                        }
+
+                        // Apply heat-coded color gradients on rects
+                        const intensity = info.intensity_score;
+                        const rect = g.querySelector("rect");
+                        
+                        // Calculate color based on heat intensity (cool violet to red-orange)
+                        // Intensity 0 -> rgba(142, 52, 255, 0.05)
+                        // Intensity 100 -> rgba(239, 68, 68, 0.75)
+                        if (rect) {
+                            if (intensity > 60) {
+                                rect.setAttribute("fill", `rgba(239, 68, 68, ${0.15 + (intensity/100) * 0.6})`);
+                                rect.setAttribute("stroke", "rgba(239, 68, 68, 0.4)");
+                            } else if (intensity > 25) {
+                                rect.setAttribute("fill", `rgba(245, 158, 11, ${0.15 + (intensity/100) * 0.5})`);
+                                rect.setAttribute("stroke", "rgba(245, 158, 11, 0.4)");
+                            } else {
+                                rect.setAttribute("fill", `rgba(142, 52, 255, ${0.05 + (intensity/100) * 0.4})`);
+                                rect.setAttribute("stroke", "rgba(142, 52, 255, 0.2)");
+                            }
+                        }
+
+                        // Save data for Dwell Chart
+                        chartLabels.push(zoneKey.replace("_", " "));
+                        chartDwells.push(Math.round(info.raw_avg_dwell_ms / 1000));
+                    }
+                });
+
+                // Update Dwell Time Chart
+                updateDwellChart(chartLabels, chartDwells);
+
+            } catch (err) {
+                console.error("Error fetching heatmap:", err);
+            }
+        }
+
+        // 4. Fetch Funnel Data
+        async function fetchFunnel(storeId) {
+            try {
+                const res = await fetch(`${API_URL}/stores/${storeId}/funnel`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const stages = data.stages;
+                const labels = ["1. Entry", "2. Zone Visit", "3. Billing Queue", "4. Purchase"];
+                const counts = [
+                    stages["1_entry"].count,
+                    stages["2_zone_visit"].count,
+                    stages["3_billing_queue"].count,
+                    stages["4_purchase"].count
+                ];
+                
+                const drops = [
+                    stages["1_entry"].percentage,
+                    stages["2_zone_visit"].percentage,
+                    stages["3_billing_queue"].percentage,
+                    stages["4_purchase"].percentage
+                ];
+
+                updateFunnelChart(labels, counts, drops);
+            } catch (err) {
+                console.error("Error fetching funnel:", err);
+            }
+        }
+
+        // 5. Fetch Anomalies
+        async function fetchAnomalies(storeId) {
+            try {
+                const res = await fetch(`${API_URL}/stores/${storeId}/anomalies`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const container = document.getElementById("anomaliesContainer");
+                const placeholder = document.getElementById("noAnomaliesPlaceholder");
+                
+                // Clear any existing anomaly elements
+                const existingCards = container.querySelectorAll(".anomaly-card");
+                existingCards.forEach(c => c.remove());
+
+                const list = data.active_anomalies;
+                if (!list || list.length === 0) {
+                    placeholder.classList.remove("hidden");
+                } else {
+                    placeholder.classList.add("hidden");
+                    
+                    list.forEach(a => {
+                        const card = document.createElement("div");
+                        card.className = "anomaly-card flex flex-col gap-2 p-4 border rounded-xl bg-red-950/10 transition-all hover:glass-highlight";
+                        
+                        let borderStyle = "border-yellow-500/30";
+                        let tagColor = "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
+                        let iconName = "alert-triangle";
+                        
+                        if (a.severity === "CRITICAL") {
+                            borderStyle = "border-red-500/30 pulse-critical";
+                            tagColor = "bg-red-500/10 text-red-400 border-red-500/20";
+                            iconName = "zap";
+                        } else if (a.severity === "INFO") {
+                            borderStyle = "border-blue-500/30";
+                            tagColor = "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                            iconName = "info";
+                        }
+
+                        card.className += ` ${borderStyle}`;
+                        
+                        card.innerHTML = `
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 border rounded-lg ${tagColor}">
+                                    <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i>
+                                    ${a.type}
+                                </span>
+                                <span class="text-[9px] text-purplle-400 font-semibold">${new Date(a.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                            <p class="text-xs font-medium text-white">${a.description}</p>
+                            <div class="mt-1 p-2 bg-[#120a1a] border border-purplle-500/10 rounded-lg text-[10px] text-purplle-300">
+                                <span class="font-bold text-purplle-400 uppercase tracking-wide">Suggested Action:</span>
+                                ${a.suggested_action}
+                            </div>
+                        `;
+                        
+                        container.appendChild(card);
+                    });
+                    
+                    // Reinitialize lucide icons for inside cards
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error("Error fetching anomalies:", err);
+            }
+        }
+
+        // ==========================================
+        // CHART RENDERING (Chart.js Configs)
+        // ==========================================
+        function updateFunnelChart(labels, counts, drops) {
+            if (funnelChart) {
+                funnelChart.data.labels = labels;
+                funnelChart.data.datasets[0].data = counts;
+                funnelChart.data.datasets[1].data = drops;
+                funnelChart.update();
+                return;
+            }
+
+            const ctx = document.getElementById('funnelChart').getContext('2d');
+            funnelChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Unique Sessions',
+                            data: counts,
+                            backgroundColor: 'rgba(142, 52, 255, 0.45)',
+                            borderColor: 'rgba(142, 52, 255, 0.9)',
+                            borderWidth: 2,
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Conversion %',
+                            data: drops,
+                            type: 'line',
+                            borderColor: '#22c55e',
+                            backgroundColor: '#22c55e',
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            yAxisID: 'y1',
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { 
+                                color: '#22c55e',
+                                callback: value => `${value}%`
+                            }
+                        },
+                        x: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#e2e1e6', font: { family: 'Inter' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDwellChart(labels, values) {
+            // Take top 8 zones to keep chart beautiful
+            const slicedLabels = labels.slice(0, 8);
+            const slicedValues = values.slice(0, 8);
+
+            if (dwellChart) {
+                dwellChart.data.labels = slicedLabels;
+                dwellChart.data.datasets[0].data = slicedValues;
+                dwellChart.update();
+                return;
+            }
+
+            const ctx = document.getElementById('dwellChart').getContext('2d');
+            dwellChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: slicedLabels,
+                    datasets: [{
+                        label: 'Average Dwell Time (s)',
+                        data: slicedValues,
+                        backgroundColor: 'rgba(109, 40, 217, 0.5)',
+                        borderColor: '#a78bfa',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                        },
+                        y: {
+                            ticks: { color: 'rgba(255, 255, 255, 0.7)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Logger helper
+        function logEvent(msg) {
+            const logBox = document.getElementById("eventsLog");
+            const time = new Date().toLocaleTimeString();
+            const logLine = document.createElement("div");
+            logLine.innerText = `[${time}] ${msg}`;
+            logBox.appendChild(logLine);
+            logBox.scrollTop = logBox.scrollHeight;
+            
+            // Cap log elements count at 15
+            while (logBox.children.length > 15) {
+                logBox.removeChild(logBox.firstChild);
+            }
+        }
+
+        // ==========================================
+        // POLL EVENT LOOP & LIFECYCLE
+        // ==========================================
+        let storeId = "ST1008";
+        
+        async function runDashboardCycle() {
+            await fetchHealth();
+            await fetchMetrics(storeId);
+            await fetchHeatmap(storeId);
+            await fetchFunnel(storeId);
+            await fetchAnomalies(storeId);
+        }
+
+        // Dropdown Event Binding
+        document.getElementById("storeSelect").addEventListener("change", (e) => {
+            storeId = e.target.value;
+            logEvent(`Switched store focus to: ${storeId}`);
+            runDashboardCycle();
+        });
+
+        // Run immediately and poll every 2 seconds
+        runDashboardCycle();
+        setInterval(runDashboardCycle, 2000);
+    </script>
+</body>
+</html>

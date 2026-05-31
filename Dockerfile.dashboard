@@ -1,0 +1,9 @@
+FROM nginx:alpine
+
+# Copy the static single-page web dashboard to the default Nginx public directory
+COPY dashboard/ /usr/share/nginx/html/
+
+# Expose port 80 (we will map this to 5173 in docker-compose)
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
