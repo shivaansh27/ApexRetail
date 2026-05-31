@@ -115,9 +115,20 @@ def generate_calibrated_events(output_path, pos_csv_path):
     # Store zones lists
     brand_zones = [
         "EB_KOREAN", "THE_FACE_SHOP", "GOOD_VIBES", "DERMDOC", "MINIMALIST",
-        "AQUALOGICA", "LAKME_SKIN", "MAYBELLINE", "FACES_CANADA", "LAKME",
+        "AQUALOGICA", "LAKME_SKIN", "MAKEUP_UNIT", "MAYBELLINE", "FACES_CANADA", "LAKME",
         "COLORBAR_SUGAR", "SWISS_BEAUTY", "RENEE_NYBAE", "ALPS_GOODNESS", "STREAX"
     ]
+
+    def get_camera_for_zone(zone_id):
+        if zone_id in ["EB_KOREAN", "THE_FACE_SHOP", "GOOD_VIBES", "DERMDOC", "MINIMALIST", "AQUALOGICA", "LAKME_SKIN"]:
+            return "CAM_2"
+        elif zone_id in ["MAYBELLINE", "FACES_CANADA", "LAKME", "COLORBAR_SUGAR", "SWISS_BEAUTY", "RENEE_NYBAE"]:
+            return "CAM_3"
+        elif zone_id in ["MAKEUP_UNIT", "ALPS_GOODNESS", "STREAX"]:
+            return "CAM_4"
+        elif zone_id in ["CASH_COUNTER", "BILLING_QUEUE", "PMU"]:
+            return "CAM_5"
+        return "CAM_2"
 
     def create_event(evt_id, store, cam, vis, evt_type, ts, zone=None, dwell=0, is_staff=False, queue_dp=None, sku=None, seq=1):
         return {
@@ -162,7 +173,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
         for zone in chosen_zones:
             # ZONE_ENTER
             events.append(create_event(
-                str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+                str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
                 vis_id, "ZONE_ENTER", curr_ts, zone=zone, seq=seq
             ))
             seq += 1
@@ -171,7 +182,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
             dwell_s = random.randint(30, 180)
             curr_ts += timedelta(seconds=dwell_s)
             events.append(create_event(
-                str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+                str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
                 vis_id, "ZONE_DWELL", curr_ts, zone=zone, dwell=dwell_s*1000, seq=seq
             ))
             seq += 1
@@ -179,7 +190,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
             # ZONE_EXIT
             curr_ts += timedelta(seconds=random.randint(5, 15))
             events.append(create_event(
-                str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+                str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
                 vis_id, "ZONE_EXIT", curr_ts, zone=zone, seq=seq
             ))
             seq += 1
@@ -243,7 +254,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
         curr_ts = entry_ts + timedelta(seconds=random.randint(45, 90))
         
         events.append(create_event(
-            str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+            str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
             vis_id, "ZONE_ENTER", curr_ts, zone=zone, seq=seq
         ))
         seq += 1
@@ -251,7 +262,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
         dwell_s = random.randint(35, 120)
         curr_ts += timedelta(seconds=dwell_s)
         events.append(create_event(
-            str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+            str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
             vis_id, "ZONE_DWELL", curr_ts, zone=zone, dwell=dwell_s*1000, seq=seq
         ))
         seq += 1
@@ -322,7 +333,6 @@ def generate_calibrated_events(output_path, pos_csv_path):
         seq = 1
         
         # Staff starts at 08:30 in the morning and wanders around
-        from datetime import datetime
         staff_start = datetime(2026, 4, 10, 8, 30, 0)
         
         events.append(create_event(
@@ -337,7 +347,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
             
             # Enter zone
             events.append(create_event(
-                str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+                str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
                 vis_id, "ZONE_ENTER", curr_ts, zone=zone, is_staff=True, seq=seq
             ))
             seq += 1
@@ -346,7 +356,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
             dwell_s = random.randint(30, 90)
             curr_ts += timedelta(seconds=dwell_s)
             events.append(create_event(
-                str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+                str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
                 vis_id, "ZONE_DWELL", curr_ts, zone=zone, dwell=dwell_s*1000, is_staff=True, seq=seq
             ))
             seq += 1
@@ -354,7 +364,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
             # Exit zone
             curr_ts += timedelta(seconds=10)
             events.append(create_event(
-                str(uuid.uuid4()), "ST1008", "CAM_2" if zone in brand_zones[:7] else "CAM_3",
+                str(uuid.uuid4()), "ST1008", get_camera_for_zone(zone),
                 vis_id, "ZONE_EXIT", curr_ts, zone=zone, is_staff=True, seq=seq
             ))
             seq += 1
