@@ -14,27 +14,25 @@ Evaluating deep learning video inference (YOLOv8 + tracking) directly inside a D
 
 ---
 
-## ⚡ Quick Start: Setup in 3 Commands
+## ⚡ Quick Start: Setup in 2 Steps
 
-Deploy the entire platform instantly using Docker Compose:
+Deploy the entire platform instantly out-of-the-box using Docker Compose. Since the pre-calibrated, Makeup-Unit-patched `events.jsonl` file is already committed and pre-packaged in this repository, you do NOT need to run any manual event generation scripts locally.
 
-### 1. Generate the Calibrated Event Stream
-Run the event generator script locally to parse POS transaction timestamps and produce the chronological event feed:
-```bash
-python -m pipeline.detect
-```
-
-### 2. Launch the Platform Containers
+### 1. Launch the Platform Containers
 Build and boot the FastAPI API, SQLite Database, Live Ingestion Replay Service, and Nginx Web Dashboard:
 ```bash
-docker-compose up --build -d
+docker compose up --build
 ```
+*(To run the services in the background in detached mode, add the `-d` flag: `docker compose up --build -d`)*
 
-### 3. Open the Analytics Dashboard
-Open your browser and navigate to the dashboard to watch the real-time footfalls, heatmaps, and funnel analytics update dynamically:
+### 2. Open the Analytics Dashboard
+Open your browser and navigate to the dashboard to watch the real-time footfalls, heatmaps, and funnel analytics update dynamically in real time:
 ```text
 http://localhost:5173
 ```
+
+> [!NOTE]
+> If you ever wish to manually regenerate the simulated events stream, you can run `python -m pipeline.detect`. However, running this without the raw POS transaction CSV dataset will overwrite your rich dataset with a smaller fallback feed. For the best, full-scale experience, stick with the pre-packaged `events.jsonl` included in the clone!
 
 ---
 
