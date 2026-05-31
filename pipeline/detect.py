@@ -77,7 +77,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
                     ts = datetime.strptime(dt_str, "%d-%m-%Y %H:%M:%S")
                 except:
                     # Parse using fallback date parsing
-                    from datetime import datetime
+
                     try:
                         dt_str = f"{order_date.strip()} {order_time.strip()}"
                         ts = datetime.strptime(dt_str, "%d-%m-%Y %H:%M:%S")
@@ -93,7 +93,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
     else:
         # Fallback seeding if CSV is missing
         logger.warning("CSV file not found for event calibration! Using mock anchor dates.")
-        from datetime import datetime
+
         anchor = datetime(2026, 4, 10, 12, 0, 0)
         transactions = [
             {"id": "TXN_00001", "timestamp": anchor + timedelta(minutes=15), "amount": 500.0, "customer": "Guest"},
@@ -106,7 +106,7 @@ def generate_calibrated_events(output_path, pos_csv_path):
     logger.info(f"Parsed {len(transactions)} transaction anchors.")
 
     events = []
-    from datetime import timedelta
+
     
     # Track states for queue and overall store
     active_queue = [] # list of visitor_ids

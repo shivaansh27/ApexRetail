@@ -38,7 +38,12 @@ app = FastAPI(
 # Allow configuring specific domains in production, falling back to wildcard in development
 cors_origins_str = os.environ.get("CORS_ORIGINS", "*")
 if cors_origins_str == "*":
-    allow_origins = ["*"]
+    allow_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000"
+    ]
 else:
     allow_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
 

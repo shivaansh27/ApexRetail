@@ -101,7 +101,95 @@ def init_db():
                     db.commit()
                     logger.info(f"Successfully seeded {len(transactions_to_seed)} transactions from CSV.")
             else:
-                logger.warning("Could not find any transaction CSV file. Skipping POS seeding.")
+                logger.warning("Could not find any transaction CSV file. Seeding transactions matching events.jsonl...")
+                # Dynamically extract and seed transactions matching the checked-in events.jsonl
+                events_candidates = [
+                    "events.jsonl",
+                    os.path.join(os.getcwd(), "events.jsonl"),
+                    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "events.jsonl")
+                ]
+                
+                events_path = None
+                for candidate in events_candidates:
+                    if os.path.exists(candidate):
+                        events_path = candidate
+                        break
+                
+                seeded_txns = []
+                if events_path:
+                    logger.info(f"Extracting transactions from: {events_path}")
+                    try:
+                        import json
+                        seen_visitors = set()
+                        with open(events_path, "r", encoding="utf-8") as f:
+                            for line in f:
+                                if not line.strip():
+                                    continue
+                                evt = json.loads(line)
+                                vis_id = evt.get("visitor_id", "")
+                                if vis_id.startswith("VIS_C_") and evt.get("event_type") == "ZONE_DWELL" and evt.get("zone_id") == "CASH_COUNTER":
+                                    if vis_id not in seen_visitors:
+                                        seen_visitors.add(vis_id)
+                                        ts_str = evt["timestamp"]
+                                        if ts_str.endswith("Z"):
+                                            ts_str = ts_str[:-1]
+                                        timestamp = datetime.fromisoformat(ts_str)
+                                        
+                                        # Calculate a realistic mock amount and quantity based on visitor id suffix
+                                        suffix = vis_id.split('_')[-1]
+                                        num_idx = int(suffix) if suffix.isdigit() else 0
+                                        basket_val = float(100.0 * (num_idx % 10 + 5))
+                                        qty = (num_idx % 3 + 1)
+                                        
+                                        seeded_txns.append(
+                                            POSTransaction(
+                                                transaction_id=f"TXN_{vis_id}",
+                                                store_id=evt.get("store_id", "ST1008").strip(),
+                                                timestamp=timestamp,
+                                                basket_value_inr=basket_val,
+                                                qty=qty,
+                                                customer_name="Guest"
+                                            )
+                                        )
+                    except Exception as parse_err:
+                        logger.error(f"Failed to parse events.jsonl for seeding: {str(parse_err)}")
+                        
+                if seeded_txns:
+                    db.bulk_save_objects(seeded_txns)
+                    db.commit()
+                    logger.info(f"Successfully seeded {len(seeded_txns)} transactions matched from events.jsonl.")
+                else:
+                    logger.warning("Could not extract events from events.jsonl. Seeding absolute fallbacks...")
+                    # Ultimate fallback mock transactions matching original mock events with CORRECT aligned times
+                    fallback_txns = [
+                        POSTransaction(
+                            transaction_id="TXN_MOCK_001",
+                            store_id="ST1008",
+                            timestamp=datetime(2026, 4, 10, 12, 15, 0),
+                            basket_value_inr=500.0,
+                            qty=1,
+                            customer_name="Guest"
+                        ),
+                        POSTransaction(
+                            transaction_id="TXN_MOCK_002",
+                            store_id="ST1008",
+                            timestamp=datetime(2026, 4, 10, 12, 45, 0),
+                            basket_value_inr=1200.0,
+                            qty=2,
+                            customer_name="Nivya"
+                        ),
+                        POSTransaction(
+                            transaction_id="TXN_MOCK_003",
+                            store_id="ST1008",
+                            timestamp=datetime(2026, 4, 10, 13, 30, 0),
+                            basket_value_inr=800.0,
+                            qty=1,
+                            customer_name="Guest"
+                        )
+                    ]
+                    db.bulk_save_objects(fallback_txns)
+                    db.commit()
+                    logger.info(f"Successfully seeded {len(fallback_txns)} fallback mock transactions.")
         else:
             logger.info(f"POS Transaction database already has {count} records. Seeding skipped.")
     except Exception as e:
